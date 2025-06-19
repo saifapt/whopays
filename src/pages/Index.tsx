@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Heart, Share2, Twitter, Instagram } from "lucide-react";
+import { Plus, X, Heart, Share2, Instagram } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -93,7 +92,7 @@ const Index = () => {
       
       if (billOption === "one-pays") {
         const randomPerson = names[Math.floor(Math.random() * names.length)];
-        resultMessage = `RIP ${randomPerson}. You're paying 💳`;
+        resultMessage = `${randomPerson}. You're paying 💳`;
         if (amount && !isNaN(amount)) {
           resultMessage += `\n\nTotal bill: ${formatCurrency(amount)} 💸`;
         }
@@ -376,22 +375,15 @@ const Index = () => {
             Made with pain 🥲 so you don't fight over bills again.
           </p>
           
-          <div className="flex justify-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <Twitter className="w-4 h-4 mr-2" />
-              Tweet This
-            </Button>
+          <div className="flex justify-center">
             <Button
               variant="ghost"  
               size="sm"
               className="text-white/70 hover:text-white hover:bg-white/10"
+              onClick={() => window.open('https://www.instagram.com/', '_blank')}
             >
               <Instagram className="w-4 h-4 mr-2" />
-              Story This
+              Follow Us
             </Button>
           </div>
         </div>
