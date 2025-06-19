@@ -14,10 +14,13 @@ const Index = () => {
   const [currentName, setCurrentName] = useState("");
   const [billOption, setBillOption] = useState("one-pays");
   const [splitCount, setSplitCount] = useState(2);
+  const [customSplitCount, setCustomSplitCount] = useState("");
+  const [billAmount, setBillAmount] = useState("");
   const [excludeSomeone, setExcludeSomeone] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [splitCountError, setSplitCountError] = useState("");
   const { toast } = useToast();
 
   const addName = () => {
@@ -42,11 +45,40 @@ const Index = () => {
     }
   };
 
+  const handleCustomSplitCountChange = (value: string) => {
+    setCustomSplitCount(value);
+    const numValue = parseInt(value);
+    if (value && (isNaN(numValue) || numValue > names.length || numValue < 1)) {
+      setSplitCountError("Enter a number less than or equal to number of names.");
+    } else {
+      setSplitCountError("");
+    }
+  };
+
+  const getEffectiveSplitCount = () => {
+    if (customSplitCount && !splitCountError) {
+      return parseInt(customSplitCount);
+    }
+    return splitCount;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
   const generateResult = () => {
     if (names.length < 2) {
       toast({
         title: "Hold up!",
         description: "You need at least 2 people to cause financial chaos 😅",
+      });
+      return;
+    }
+
+    if (billOption === "split-some" && splitCountError) {
+      toast({
+        title: "Fix the error first!",
+        description: "Please enter a valid number of people to split between.",
       });
       return;
     }
@@ -57,16 +89,40 @@ const Index = () => {
     // Dramatic pause for suspense
     setTimeout(() => {
       let resultMessage = "";
+      const amount = parseFloat(billAmount);
       
       if (billOption === "one-pays") {
         const randomPerson = names[Math.floor(Math.random() * names.length)];
-        resultMessage = `RIP ${randomPerson}. You're paying 💳\n\nBetter luck next time! 🎲`;
+        resultMessage = `RIP ${randomPerson}. You're paying 💳`;
+        if (amount && !isNaN(amount)) {
+          resultMessage += `\n\nTotal bill: ${formatCurrency(amount)} 💸`;
+        }
+        resultMessage += `\n\nBetter luck next time! 🎲`;
       } else if (billOption === "split-all") {
-        resultMessage = `You all split it evenly!\n\nFriendship saved 🤝✨`;
+        if (amount && !isNaN(amount)) {
+          const perPersonAmount = amount / names.length;
+          resultMessage = `Everyone pays ${formatCurrency(perPersonAmount)}. Friendship saved 💖`;
+        } else {
+          resultMessage = `You all split it evenly!\n\nFriendship saved 🤝✨`;
+        }
       } else if (billOption === "split-some") {
+        const effectiveCount = getEffectiveSplitCount();
         const shuffled = [...names].sort(() => 0.5 - Math.random());
-        const selectedPeople = shuffled.slice(0, Math.min(splitCount, names.length));
-        resultMessage = `These lucky folks are splitting:\n${selectedPeople.join(", ")}\n\nThe rest of you are free! 🎉`;
+        const selectedPeople = shuffled.slice(0, Math.min(effectiveCount, names.length));
+        
+        if (amount && !isNaN(amount)) {
+          const perPersonAmount = amount / selectedPeople.length;
+          if (selectedPeople.length === 2) {
+            resultMessage = `${selectedPeople.join(" & ")} will each pay ${formatCurrency(perPersonAmount)} 😬`;
+          } else if (selectedPeople.length === 3) {
+            resultMessage = `${selectedPeople.slice(0, -1).join(", ")} & ${selectedPeople[selectedPeople.length - 1]} will each pay ${formatCurrency(perPersonAmount)} 😬`;
+          } else {
+            resultMessage = `${selectedPeople.slice(0, -1).join(", ")} & ${selectedPeople[selectedPeople.length - 1]} will each pay ${formatCurrency(perPersonAmount)} 😬`;
+          }
+        } else {
+          resultMessage = `These lucky folks are splitting:\n${selectedPeople.join(", ")}`;
+        }
+        resultMessage += `\n\nThe rest of you are free! 🎉`;
       }
 
       setResult(resultMessage);
@@ -92,6 +148,8 @@ const Index = () => {
       });
     }
   };
+
+  const showAmountField = billOption === "split-all" || billOption === "split-some";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-500 via-purple-500 to-teal-500 p-4">
@@ -208,23 +266,60 @@ const Index = () => {
             </RadioGroup>
 
             {billOption === "split-some" && (
-              <div className="ml-6 space-y-2">
+              <div className="ml-6 space-y-3">
                 <Label className="text-sm font-medium text-gray-600">
-                  How many people should split? ({splitCount})
+                  How many people should split?
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {[2, 3, 4].map((count) => (
                     <Button
                       key={count}
-                      variant={splitCount === count ? "default" : "outline"}
+                      variant={splitCount === count && !customSplitCount ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setSplitCount(count)}
+                      onClick={() => {
+                        setSplitCount(count);
+                        setCustomSplitCount("");
+                        setSplitCountError("");
+                      }}
                       className="w-10 h-10"
                     >
                       {count}
                     </Button>
                   ))}
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-600">
+                    Custom number of people
+                  </Label>
+                  <Input
+                    type="number"
+                    value={customSplitCount}
+                    onChange={(e) => handleCustomSplitCountChange(e.target.value)}
+                    placeholder="e.g. 5"
+                    className="w-20"
+                    min="1"
+                    max={names.length}
+                  />
+                  {splitCountError && (
+                    <p className="text-red-500 text-xs">{splitCountError}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Amount Input */}
+            {showAmountField && (
+              <div className="space-y-2 pt-2 border-t border-gray-200">
+                <Label className="text-sm font-medium text-gray-600">
+                  Enter Bill Amount
+                </Label>
+                <Input
+                  type="number"
+                  value={billAmount}
+                  onChange={(e) => setBillAmount(e.target.value)}
+                  placeholder="e.g. 1500"
+                  className="text-lg border-2 border-teal-200 focus:border-teal-400"
+                />
               </div>
             )}
           </CardContent>
@@ -233,7 +328,7 @@ const Index = () => {
         {/* Action Button */}
         <Button
           onClick={generateResult}
-          disabled={names.length < 2 || isLoading}
+          disabled={names.length < 2 || isLoading || (billOption === "split-some" && splitCountError)}
           className="w-full h-14 text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0 shadow-xl transform hover:scale-105 transition-all duration-200"
         >
           {isLoading ? (
