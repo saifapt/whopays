@@ -328,7 +328,7 @@ const Index = () => {
         {/* Action Button */}
         <Button
           onClick={generateResult}
-          disabled={names.length < 2 || isLoading || (billOption === "split-some" && splitCountError)}
+          disabled={names.length < 2 || isLoading || (billOption === "split-some" && !!splitCountError)}
           className="w-full h-14 text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white border-0 shadow-xl transform hover:scale-105 transition-all duration-200"
         >
           {isLoading ? (
